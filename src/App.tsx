@@ -1,27 +1,23 @@
-import React, { useState, useEffect } from 'react';
+// Versão Final Limpa - Triene System
+import React, { useState } from 'react';
 import { 
-  MessageSquare, 
   Users, 
   Settings, 
   Plus, 
   CheckCircle, 
   Clock, 
-  Send,
-  MoreVertical,
-  Zap,
-  Phone,
-  Link as LinkIcon,
-  Mail,
-  Tag,
-  Download,
-  Upload,
-  FileText,
-  User,
-  LogOut,
-  Database,
-  Lock,
-  Server,
-  Globe,
+  Zap, 
+  Phone, 
+  Mail, 
+  Tag, 
+  Download, 
+  Upload, 
+  User, 
+  LogOut, 
+  Database, 
+  Lock, 
+  Server, 
+  Globe, 
   Wifi
 } from 'lucide-react';
 
@@ -122,7 +118,6 @@ export default function TrieneApp() {
   // Estado da Aplicação
   const [activeTab, setActiveTab] = useState<'leads' | 'cadence' | 'settings'>('leads');
   const [activeCadenceId, setActiveCadenceId] = useState<string>('flow_padrao');
-  const [currentTime, setCurrentTime] = useState<Date>(new Date());
   const [isProcessing, setIsProcessing] = useState(false);
   
   // Configuração de Integração (DigiSac)
@@ -133,7 +128,9 @@ export default function TrieneApp() {
     isConnected: true
   });
 
-  const [cadences, setCadences] = useState<CadenceFlow[]>(MOCK_CADENCES);
+  // Removido setCadences pois não era usado, evitando erro TS
+  const [cadences] = useState<CadenceFlow[]>(MOCK_CADENCES);
+  
   const [leads, setLeads] = useState<Lead[]>([
     { 
       id: 1, 
@@ -174,7 +171,6 @@ export default function TrieneApp() {
   // --- FUNÇÕES DE LOGIN ---
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulação simples de login
     if (loginEmail === 'admin@triene.com' && loginPass === 'admin') {
       setCurrentUser({ id: 1, name: 'Administrador', role: 'admin', email: loginEmail });
     } else if (loginEmail === 'user@triene.com' && loginPass === 'user') {

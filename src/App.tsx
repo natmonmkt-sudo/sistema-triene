@@ -1,30 +1,58 @@
 // Versão Final Limpa - Triene System
 import React, { useState } from 'react';
-import { 
-  Users, 
-  Settings, 
-  Plus, 
-  CheckCircle, 
-  Clock, 
-  Zap, 
-  Phone, 
-  Mail, 
-  Tag, 
-  Download, 
-  Upload, 
-  User, 
-  LogOut, 
-  Database, 
-  Lock, 
-  Server, 
-  Globe, 
-  Wifi
+import {
+  Users,
+  Settings,
+  Plus,
+  CheckCircle,
+  Clock,
+  Zap,
+  Phone,
+  Mail,
+  Tag,
+  Download,
+  Upload,
+  User,
+  LogOut,
+  Database,
+  Lock,
+  Server,
+  Globe,
+  Wifi,
+  Image,
+  CalendarCheck,
+  Edit3,
+  Wand2
 } from 'lucide-react';
 
 // --- TIPOS ---
 type LeadStatus = 'Novo' | 'Em Cadência' | 'Respondeu' | 'Agendado' | 'Perdido';
 type ChannelType = 'whatsapp' | 'email';
 type IntegrationProvider = 'digisac' | 'z-api' | 'evolution' | 'native';
+type ImageStatus = 'Pendente' | 'Gerada' | 'Editada';
+
+interface StyleGuide {
+  colors: string;
+  fonts: string;
+  elements: string;
+  aesthetics: string;
+  persona: string;
+  niche: string;
+  cta: string;
+}
+
+interface ContentPlanItem {
+  day: number;
+  theme: string;
+  imageType: string;
+  objective: string;
+  prompt: string;
+  imageStatus: ImageStatus;
+  imagePreview?: string;
+  description: string;
+  hashtags: string;
+  ctaUsed: string;
+}
 
 interface User {
   id: number;
@@ -116,9 +144,24 @@ export default function TrieneApp() {
   const [loginPass, setLoginPass] = useState('');
 
   // Estado da Aplicação
-  const [activeTab, setActiveTab] = useState<'leads' | 'cadence' | 'settings'>('leads');
+  const [activeTab, setActiveTab] = useState<'leads' | 'cadence' | 'settings' | 'content'>('leads');
   const [activeCadenceId, setActiveCadenceId] = useState<string>('flow_padrao');
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Estado do Módulo de Conteúdo
+  const [instagramHandle, setInstagramHandle] = useState('');
+  const [outlineApproved, setOutlineApproved] = useState(false);
+  const [analysisSummary, setAnalysisSummary] = useState('');
+  const [contentOutline, setContentOutline] = useState<ContentPlanItem[]>([]);
+  const [styleGuide, setStyleGuide] = useState<StyleGuide>({
+    colors: 'Azul escuro, branco e detalhes em neon',
+    fonts: 'Sans-serif condensada e títulos em bold',
+    elements: 'Formas geométricas, ícones minimalistas, mockups de smartphones',
+    aesthetics: 'Feed limpo com contraste e layouts modulares',
+    persona: 'Fundadores e CMOs de startups digitais',
+    niche: 'Marketing de performance',
+    cta: 'Fale com nosso time via WhatsApp'
+  });
   
   // Configuração de Integração (DigiSac)
   const [integration, setIntegration] = useState<IntegrationConfig>({
@@ -167,6 +210,137 @@ export default function TrieneApp() {
 
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [leadDetailTab, setLeadDetailTab] = useState<'chat' | 'info'>('chat');
+
+  // --- FUNÇÕES DO GERADOR DE CONTEÚDO ---
+  const buildOutline = () => {
+    const objectives = ['Engajamento', 'Autoridade', 'Venda', 'Educativo', 'Institucional'];
+    const imageTypes = ['Carrossel', 'Mockup', 'Quote visual', 'Infográfico', 'Reels capa'];
+    const themesBase = [
+      'Bastidores da agência',
+      'Resultado de cliente',
+      'Framework de campanha',
+      'Tendência do nicho',
+      'Oferta do mês',
+      'Dica prática de mídia paga',
+      'História de sucesso',
+      'Checklist rápido',
+      'Quebra de objeção',
+      'Convite para conversa'
+    ];
+
+    const outline = Array.from({ length: 30 }, (_, index) => ({
+      day: index + 1,
+      theme: `${themesBase[index % themesBase.length]} #${index + 1}`,
+      imageType: imageTypes[index % imageTypes.length],
+      objective: objectives[index % objectives.length],
+      prompt: '',
+      imageStatus: 'Pendente' as ImageStatus,
+      imagePreview: '',
+      description: '',
+      hashtags: '',
+      ctaUsed: styleGuide.cta
+    }));
+
+    setContentOutline(outline);
+    setOutlineApproved(false);
+    setAnalysisSummary(`Analisamos @${instagramHandle || 'cliente'}: feed com ${styleGuide.colors.toLowerCase()}, fontes ${styleGuide.fonts.toLowerCase()} e estética ${styleGuide.aesthetics.toLowerCase()}. Personas principais: ${styleGuide.persona}. Nicho: ${styleGuide.niche}.`);
+  };
+
+  const updateContentItem = (day: number, data: Partial<ContentPlanItem>) => {
+    setContentOutline(prev => prev.map(item => item.day === day ? { ...item, ...data } : item));
+  };
+
+  const approveOutline = () => {
+    if (!contentOutline.length) {
+      alert('Gere um esboço antes de aprovar.');
+      return;
+    }
+    setOutlineApproved(true);
+  };
+
+  const generateAutoPrompt = (item: ContentPlanItem) => {
+    return `Arte ${item.imageType} para Instagram focada em ${item.objective}. Use ${styleGuide.colors}, tipografia ${styleGuide.fonts}, elementos ${styleGuide.elements}. Estética: ${styleGuide.aesthetics}. Persona: ${styleGuide.persona}. Nicho: ${styleGuide.niche}. Realce o tema "${item.theme}" e finalize com call-to-action ${styleGuide.cta}.`;
+  };
+
+  const createImageForDay = (day: number) => {
+    const item = contentOutline.find(plan => plan.day === day);
+    if (!item) return;
+    const promptToUse = item.prompt || generateAutoPrompt(item);
+    const previewUrl = `https://dummyimage.com/600x400/0f172a/ffffff.png&text=Dia+${item.day}+${encodeURIComponent(item.theme)}`;
+    updateContentItem(day, {
+      prompt: promptToUse,
+      imageStatus: 'Gerada',
+      imagePreview: previewUrl
+    });
+  };
+
+  const editImageForDay = (day: number) => {
+    const item = contentOutline.find(plan => plan.day === day);
+    if (!item) return;
+    const editedPreview = item.imagePreview
+      ? `${item.imagePreview}&edited=${Date.now()}`
+      : `https://dummyimage.com/600x400/f97316/ffffff.png&text=Editado+Dia+${day}`;
+    updateContentItem(day, { imageStatus: 'Editada', imagePreview: editedPreview });
+  };
+
+  const generateDescriptionForDay = (day: number) => {
+    const item = contentOutline.find(plan => plan.day === day);
+    if (!item) return;
+    const hashtags = `#${styleGuide.niche.replace(/\s+/g, '')} #marketing #${item.objective.toLowerCase()} #${styleGuide.persona.split(' ')[0].toLowerCase()}`;
+    const description = `Post sobre "${item.theme}". Explica visualmente ${item.objective.toLowerCase()} com foco em ${item.imageType}. ${styleGuide.cta}. ${hashtags}`;
+    updateContentItem(day, { description, hashtags, ctaUsed: styleGuide.cta });
+  };
+
+  const bulkGenerateImages = () => {
+    if (!outlineApproved) {
+      alert('Aprove o esboço antes de gerar em massa.');
+      return;
+    }
+    setContentOutline(prev => prev.map(item => ({
+      ...item,
+      prompt: item.prompt || generateAutoPrompt(item),
+      imageStatus: 'Gerada',
+      imagePreview: item.imagePreview || `https://dummyimage.com/600x400/0f172a/ffffff.png&text=Dia+${item.day}+${encodeURIComponent(item.theme)}`
+    })));
+  };
+
+  const bulkGenerateDescriptions = () => {
+    if (!outlineApproved) {
+      alert('Aprove o esboço antes de gerar descrições.');
+      return;
+    }
+    setContentOutline(prev => prev.map(item => {
+      const hashtags = `#${styleGuide.niche.replace(/\s+/g, '')} #marketing #${item.objective.toLowerCase()} #${styleGuide.persona.split(' ')[0].toLowerCase()}`;
+      const description = `Post sobre "${item.theme}". Explica visualmente ${item.objective.toLowerCase()} com foco em ${item.imageType}. ${styleGuide.cta}. ${hashtags}`;
+      return { ...item, description, hashtags, ctaUsed: styleGuide.cta };
+    }));
+  };
+
+  const exportCalendar = () => {
+    if (!contentOutline.length) {
+      alert('Nada para exportar. Gere o esboço primeiro.');
+      return;
+    }
+    const payload = contentOutline.map(item => ({
+      dia: item.day,
+      tema: item.theme,
+      tipoImagem: item.imageType,
+      objetivo: item.objective,
+      prompt: item.prompt,
+      statusImagem: item.imageStatus,
+      descricao: item.description,
+      hashtags: item.hashtags,
+      cta: item.ctaUsed
+    }));
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'cronograma_conteudo.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   // --- FUNÇÕES DE LOGIN ---
   const handleLogin = (e: React.FormEvent) => {
@@ -373,12 +547,20 @@ export default function TrieneApp() {
         </div>
 
         <nav className="flex-1 px-4 space-y-2 mt-4">
-          <button 
+          <button
             onClick={() => setActiveTab('leads')}
             className={`w-full flex items-center p-3 rounded-lg transition-all ${activeTab === 'leads' ? 'bg-blue-600' : 'hover:bg-slate-800 text-slate-300'}`}
           >
             <Users size={18} className="mr-3" />
             Leads & CRM
+          </button>
+
+          <button
+            onClick={() => setActiveTab('content')}
+            className={`w-full flex items-center p-3 rounded-lg transition-all ${activeTab === 'content' ? 'bg-blue-600' : 'hover:bg-slate-800 text-slate-300'}`}
+          >
+            <CalendarCheck size={18} className="mr-3" />
+            Conteúdo 30 dias
           </button>
           
           {currentUser.role === 'admin' && (
@@ -425,6 +607,7 @@ export default function TrieneApp() {
         <header className="bg-white border-b border-slate-200 p-4 flex justify-between items-center shadow-sm h-16">
           <h2 className="text-lg font-bold text-slate-700 flex items-center gap-2">
             {activeTab === 'leads' && <><Database size={20}/> Gestão de Leads</>}
+            {activeTab === 'content' && <><Image size={20}/> Calendário de Conteúdo</>}
             {activeTab === 'cadence' && <><Settings size={20}/> Editor de Fluxos</>}
             {activeTab === 'settings' && <><Server size={20}/> Integrações (API)</>}
           </h2>
@@ -459,7 +642,222 @@ export default function TrieneApp() {
 
         {/* BODY */}
         <main className="flex-1 overflow-hidden relative bg-slate-100 p-4">
-          
+
+          {activeTab === 'content' && (
+            <div className="space-y-4 h-full overflow-auto pb-10">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 lg:col-span-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wand2 className="text-indigo-600" size={18} />
+                    <p className="text-sm font-semibold text-slate-700">Etapa 1 — Esboço dos 30 dias</p>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-slate-500">Perfil do Instagram</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        placeholder="@cliente"
+                        value={instagramHandle}
+                        onChange={e => setInstagramHandle(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">CTA configurado</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.cta}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, cta: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Nicho</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.niche}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, niche: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Persona</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.persona}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, persona: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+                    <div>
+                      <label className="text-xs text-slate-500">Cores predominantes</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.colors}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, colors: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Fontes</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.fonts}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, fonts: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Elementos visuais</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.elements}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, elements: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-500">Estética do feed</label>
+                      <input
+                        className="w-full mt-1 rounded border border-slate-200 px-3 py-2 text-sm"
+                        value={styleGuide.aesthetics}
+                        onChange={e => setStyleGuide(prev => ({ ...prev, aesthetics: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-3 mt-4 items-center">
+                    <button
+                      onClick={buildOutline}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded text-sm font-medium"
+                    >
+                      Analisar perfil e gerar esboço
+                    </button>
+                    <button
+                      onClick={approveOutline}
+                      className={`px-4 py-2 rounded text-sm font-medium border ${outlineApproved ? 'bg-green-600 text-white border-green-600' : 'border-slate-300 text-slate-700 bg-white'}`}
+                    >
+                      Aprovar esboço
+                    </button>
+                    {analysisSummary && (
+                      <span className="text-xs text-slate-500">{analysisSummary}</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm">
+                    <CalendarCheck size={18} className="text-blue-600" />
+                    Cronograma geral
+                  </div>
+                  <p className="text-xs text-slate-500">Visualização rápida dos 30 dias aprovados.</p>
+                  <div className="max-h-64 overflow-auto border border-slate-100 rounded">
+                    {contentOutline.map(item => (
+                      <div key={item.day} className="px-3 py-2 border-b border-slate-100 text-xs flex items-center justify-between">
+                        <div>
+                          <span className="font-semibold text-slate-700">Dia {item.day}</span> — {item.theme}
+                          <div className="text-[10px] text-slate-500">{item.imageType} · {item.objective}</div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-full text-[10px] border ${item.imageStatus === 'Gerada' ? 'bg-green-50 text-green-700 border-green-200' : item.imageStatus === 'Editada' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'}`}>{item.imageStatus}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={bulkGenerateImages} className="flex-1 text-sm bg-blue-600 text-white py-2 rounded">Gerar imagens em massa</button>
+                    <button onClick={bulkGenerateDescriptions} className="flex-1 text-sm bg-slate-800 text-white py-2 rounded">Gerar descrições em massa</button>
+                  </div>
+                  <button onClick={exportCalendar} className="w-full text-sm border border-slate-200 py-2 rounded hover:bg-slate-50">Exportar calendário</button>
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Etapa 2 — Geração de Imagem</p>
+                    <p className="text-xs text-slate-500">Cole um prompt manualmente ou deixe a IA gerar com base no estilo visual aprovado.</p>
+                  </div>
+                  <span className="text-[11px] px-3 py-1 rounded-full border bg-slate-50 text-slate-600">Designer da imagem é prioridade</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-auto pr-1">
+                  {contentOutline.map(item => (
+                    <div key={item.day} className="border border-slate-200 rounded-lg p-3 space-y-2 bg-slate-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-slate-700">Dia {item.day}: {item.theme}</p>
+                          <p className="text-[11px] text-slate-500">{item.imageType} · {item.objective}</p>
+                        </div>
+                        <span className={`text-[10px] px-2 py-1 rounded-full border ${item.imageStatus === 'Gerada' ? 'bg-green-50 text-green-700 border-green-200' : item.imageStatus === 'Editada' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-white text-slate-500 border-slate-200'}`}>{item.imageStatus}</span>
+                      </div>
+                      <div className="rounded-md border border-dashed border-slate-200 bg-white overflow-hidden">
+                        {item.imagePreview ? (
+                          <img src={item.imagePreview} alt={`Prévia do dia ${item.day}`} className="w-full h-32 object-cover" />
+                        ) : (
+                          <div className="h-32 flex items-center justify-center text-[11px] text-slate-400 bg-slate-50">
+                            Prévia da arte aparecerá aqui
+                          </div>
+                        )}
+                      </div>
+                      <textarea
+                        className="w-full border border-slate-200 rounded px-2 py-1 text-xs"
+                        rows={3}
+                        placeholder="Cole seu prompt manualmente"
+                        value={item.prompt}
+                        onChange={e => updateContentItem(item.day, { prompt: e.target.value })}
+                      />
+                      <div className="flex gap-2 text-xs">
+                        <button
+                          onClick={() => updateContentItem(item.day, { prompt: generateAutoPrompt(item) })}
+                          className="flex-1 bg-white border border-slate-200 rounded py-1 hover:bg-slate-100"
+                        >
+                          Gerar prompt automático
+                        </button>
+                        <button
+                          onClick={() => createImageForDay(item.day)}
+                          className="flex-1 bg-indigo-600 text-white rounded py-1 hover:bg-indigo-700"
+                        >
+                          Gerar imagem agora
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => editImageForDay(item.day)}
+                        className="w-full text-xs border border-amber-200 text-amber-700 rounded py-1 bg-amber-50 hover:bg-amber-100 flex items-center justify-center gap-1"
+                      >
+                        <Edit3 size={14} /> Editar imagem
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-700">Etapa 3 — Descrição do Post</p>
+                    <p className="text-xs text-slate-500">Explica a imagem, aplica CTA configurado e hashtags do nicho automaticamente.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-auto pr-1">
+                  {contentOutline.map(item => (
+                    <div key={item.day} className="border border-slate-200 rounded-lg p-3 bg-white space-y-2">
+                      <p className="text-sm font-bold text-slate-700">Dia {item.day}: {item.theme}</p>
+                      <textarea
+                        className="w-full border border-slate-200 rounded px-2 py-1 text-xs"
+                        rows={3}
+                        placeholder="Descrição focada em explicar a imagem"
+                        value={item.description}
+                        onChange={e => updateContentItem(item.day, { description: e.target.value })}
+                      />
+                      <div className="text-[11px] text-slate-500">CTA: {item.ctaUsed || styleGuide.cta}</div>
+                      <div className="text-[11px] text-slate-500">Hashtags: {item.hashtags || '#aguardando'}</div>
+                      <button
+                        onClick={() => generateDescriptionForDay(item.day)}
+                        className="w-full text-xs bg-slate-900 text-white rounded py-1 hover:bg-slate-800 flex items-center gap-1 justify-center"
+                      >
+                        <Tag size={14} /> Gerar descrição para esta imagem
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'leads' && (
             <div className="flex gap-4 h-full">
               
